@@ -1860,7 +1860,6 @@ impl TypeNames {
 		}
 	}
 }
-
 /* Memory-managed interface to target data. */
 
 pub struct target_data_res {

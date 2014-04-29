@@ -21,14 +21,15 @@ impl Function {
 				let func = ntv.data;
 				func(this, callee, args)
 			}, RegularFunc(ref data) => {
-				let scope = exe.make_scope();
-				scope.borrow().borrow_mut().insert(~"this", Property::new(this));
+				let ref scope = exe.make_scope();
+				scope.insert(~"this", Property::new(this));
 				for i in range(0, data.args.len()) {
 					let name = data.args.get(i);
 					let expr = args.get(i);
-					scope.borrow().borrow_mut().insert(name.clone(), Property::new(*expr));
+					scope.insert(name.clone(), Property::new(*expr));
 				}
-				let result = exe.run(&data.expr);
+				let compiled = exe.compile(&data.expr);
+				let result = exe.run(compiled);
 				exe.destroy_scope();
 				result
 			}
@@ -40,14 +41,14 @@ impl Function {
 pub struct RegularFunction {
 	/// The fields associated with the function
 	pub object : ObjectData,
-	/// This function's expression
+	/// This function's compiled expression
 	pub expr : Expr,
 	/// The argument names of the function
 	pub args : Vec<~str>
 }
 impl RegularFunction {
 	/// Make a new regular function
-	pub fn new(expr : Expr, args: Vec<~str>) -> RegularFunction {
+	pub fn new(expr: Expr, args: Vec<~str>) -> RegularFunction {
 		let mut obj = TreeMap::new();
 		obj.insert(~"arguments", Property::new(Gc::new(VInteger(args.len() as i32))));
 		RegularFunction {object: obj, expr: expr, args: args}
