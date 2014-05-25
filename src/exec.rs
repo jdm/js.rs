@@ -10,10 +10,12 @@ use js::value::{Value, ValueData, VNull, VUndefined, VString, VNumber, VInteger,
 use js::object::{INSTANCE_PROTOTYPE, PROTOTYPE, ObjectData};
 use js::function::{RegularFunc, RegularFunction};
 use js::{console, math, object, array, function, json, number, error, uri, string};
+use jit;
 use collections::treemap::TreeMap;
 use std::vec::Vec;
 use std::gc::Gc;
 use std::cell::RefCell;
+use libjit::Context;
 /// An execution engine
 pub trait Executor {
 	/// Make a new execution engine
@@ -29,13 +31,14 @@ pub trait Executor {
 	/// Run an expression
 	fn run(&mut self, expr:&Expr) -> ResultValue;
 }
-#[deriving(Clone)]
 /// A Javascript intepreter
 pub struct Interpreter {
 	/// An object representing the global object
 	global: Value,
 	/// The variable scopes
 	scopes: Vec<Gc<RefCell<ObjectData>>>,
+        /// A JIT context
+        jit: Box<Context>,
 }
 impl Executor for Interpreter {
 	fn new() -> Interpreter {
@@ -50,7 +53,7 @@ impl Executor for Interpreter {
 		error::init(global);
 		string::init(global);
 		uri::init(global);
-		Interpreter {global: global, scopes: Vec::new()}
+		Interpreter {global: global, scopes: Vec::new(), jit: Context::new()}
 	}
 	fn set_global(&mut self, name:StrBuf, val:Value) -> Value {
 		self.global.borrow().set_field(name, val)
@@ -67,6 +70,16 @@ impl Executor for Interpreter {
 		self.scopes.pop();
 	}
 	fn run(&mut self, expr:&Expr) -> ResultValue {
+                let res = jit::compile_expr(self.jit, expr);
+                match res {
+                    Ok(func) => {
+                        let func: fn(&Expr, &mut Value) = func.closure();
+                        let mut rv: Value = Gc::new(VUndefined);
+                        func(expr, &mut rv);
+                        return Ok(rv);
+                    }
+                    Err(reason) => println!("note: not JITting due to {:?}", reason),
+                }
 		match expr.def {
 			ConstExpr(CNull) => Ok(Gc::new(VNull)),
 			ConstExpr(CUndefined) => Ok(Gc::new(VUndefined)),

@@ -8,18 +8,24 @@ use std::io;
 
 fn main() {
 	let mut engine : Interpreter = Executor::new();
-	print!("> ");
-	for line in io::stdin().lines() {
-		match line {
+        loop {
+                print!("> ");
+                match io::stdin().read_line() {
 			Ok(line) => {
+                                io::stdout().flush().unwrap();
 				let tokens = Lexer::<io::BufferedReader<io::BufReader>>::lex_str(line.as_slice());
-				let expr = Parser::new(tokens).parse_all().unwrap();
+			        let expr = match Parser::new(tokens).parse_all() {
+                                    Ok(expr) => expr,
+                                    Err(e) => {
+                                        println!("Error: {}", e);
+                                        continue;
+                                    }
+                                };
 				let result = engine.run(&expr);
 				match result {
-					Ok(v) => print!("{}", v.borrow()),
-					Err(v) => print!("Error: {}", v.borrow())
+					Ok(v) => println!("{}", v.borrow()),
+					Err(v) => println!("Error: {}", v.borrow())
 				}
-				print!("\n> ");
 			},
 			Err(err) => {
 				fail!("{}", err);

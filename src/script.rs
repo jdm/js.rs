@@ -16,6 +16,8 @@
 #![feature(macro_rules)]
 
 //! A Javascript lexing, parsing and execution library
+extern crate core;
+extern crate libc;
 extern crate collections;
 extern crate time;
 extern crate serialize;
@@ -29,6 +31,10 @@ pub mod lexer;
 pub mod parser;
 /// An interpreter which runs Javascript expressions
 pub mod exec;
+/// A JIT compiler for hot JS expressions
+pub mod jit;
+/// Bindings for the libjit C library
+pub mod libjit;
 /// An implementation of the core Javascript library in Rust
 pub mod js {
 	/// Javascript values, utility methods and conversion between Javascript values and Rust values
